@@ -23,6 +23,10 @@ friends_list_RDD =  $sc
                   .map(lambda{|user, suggestions| [user, suggestions.sort.reverse ] }  )
                   .cache
 
-#puts friends_list_RDD.take(2)
-
 print friends_list_RDD.collect
+#puts friends_list_RDD.take(2)
+#complain method missing...
+
+#puts "924"
+#print friendsListRDD.lookup('924')
+# should be 439,2409,6995,11860,15416,43748,45881
