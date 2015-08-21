@@ -1,22 +1,33 @@
-#[(pair, 1) for pair in list(itertools.combinations(line.split(),2))]
-#fileName = 'testb.txt'
 import itertools
 
-def parseBrowsingLine(line):
-  return [(pair, 1) for pair in list(itertools.permutations(line.split(),2))]
+def parseSingle(line):
+    return [(single, 1) for single in line.split()]
 
-s = 100
-topN = 15
-#fileName = 'browsing.txt'
-fileName = 'q2testdata.txt'
-browsingRDD = (sc
-                  .textFile( fileName )
-                  .flatMap( parseBrowsingLine )
-                  .reduceByKey( lambda a, b: a + b )
-                  .filter(lambda (pair, counts): counts > s)
+def parseSet(line, itemSetSize=2):
+    return [((itemSet[0], itemSet), 1) for itemSet in list(itertools.permutations(line.split(), itemSetSize))]
+
+s    = 100 # set support threshold
+topN = 15  # set top items to show
+fileName = 'browsing.txt'
+#fileName = 'q2testdata.txt'  #toy input set for test
+
+fileRDD = sc.textFile(fileName, 8)
+
+singleCountRDD = (fileRDD
+                  .flatMap(parseSingle)
+                  .reduceByKey(lambda a, b: a + b)
+                  .filter(lambda (single, count): count > s)
                   .cache()
-                   )
+                  )
 
+confidence2RDD = (fileRDD
+                  .flatMap(lambda line: parseSet(line, itemSetSize=2)) #change to 3 for itemsets size 3?
+                  .reduceByKey(lambda a, b: a + b)
+                  .map(lambda ((single, itemSet), setsCount): (single, (itemSet, float(setsCount))))
+                  .join(singleCountRDD)
+                  .map(lambda (single, ((itemSet, setsCount), singleCount)): (itemSet, setsCount / singleCount))
+                  .cache()
+                  )
 
 print "Top " + str(topN)
-print browsingRDD.takeOrdered(topN, lambda (pair, counts): -counts)
+print confidence2RDD.takeOrdered(topN, lambda (itemSet, score): -score)
