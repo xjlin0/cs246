@@ -1,3 +1,5 @@
+# Under the PySpark shell, type:
+# execfile('q2_browsing.py')
 import itertools
 
 def parseSingle(line):
