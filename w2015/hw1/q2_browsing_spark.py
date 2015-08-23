@@ -1,5 +1,5 @@
 # Under the PySpark shell, type:
-# execfile('q2_browsing.py')
+# execfile('q2_browsing_spark.py')
 import itertools
 
 def parseSingle(line):
@@ -8,8 +8,8 @@ def parseSingle(line):
 def parseSet(line, itemSetSize=2):
     return [((itemSet[0], itemSet), 1) for itemSet in list(itertools.permutations(line.split(), itemSetSize))]
 
-s    = 100 # set support threshold
-topN = 15  # set top items to show
+s        = 100 # set support threshold
+topN     = 15  # set top items to show
 fileName = 'browsing.txt'
 #fileName = 'q2testdata.txt'  #toy input set for test
 

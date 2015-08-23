@@ -1,4 +1,7 @@
-#load('./friend_you_may_know.rb')
+#This code does not work for bigger dataset, why?
+
+# In ruby-spark shell
+# load('q1_people_you_may_know_spark.rb')
 
 require 'ruby-spark'
 
@@ -11,8 +14,8 @@ parse_friends_line = lambda do |line|
   connected + commons
 end
 
-#file_name = 'soc-LiveJournal1Adj.txt'
-file_name = 'q1testdata.txt'
+file_name = 'soc-LiveJournal1Adj.txt'
+# file_name = 'q1testdata.txt'
 friends_list_RDD =  $sc
                   .textFile( file_name )
                   .flatMap( parse_friends_line )
@@ -21,10 +24,10 @@ friends_list_RDD =  $sc
                   .map( lambda{|pair, counts| [pair.first, [counts, pair.last]] } )
                   .groupByKey
                   .map(lambda{|user, suggestions| [user, suggestions.sort.reverse ] }  )
-                  .cache
+#                  .cache
 
-print friends_list_RDD.collect
-#puts friends_list_RDD.take(2)
+#print friends_list_RDD.lookup('924')
+print friends_list_RDD.take(2)
 #complain method missing...
 
 #puts "924"

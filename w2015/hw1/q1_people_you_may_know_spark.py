@@ -21,7 +21,7 @@ friendsListRDD = (sc
                   .map(lambda ((user, friend), counts): (user, (counts, friend)))
                   .groupByKey()
                   .map(lambda (user, suggestions):(user, sorted(list(suggestions), reverse=True)))
-                  .cache()
+                  #.cache()
                    )
 
 
