@@ -1,49 +1,31 @@
-"""The classic MapReduce job: count the frequency of words.
-   Copy from https://github.com/Yelp/mrjob for comparison
+"""The classic MapReduce job: count the frequency of words and get the most frequent word
+   Modified from https://github.com/Yelp/mrjob
 """
-
-import time
-start_time = time.time()
 
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 import re
+import time
+start_time = time.time()
 
 WORD_RE = re.compile(r"[\w']+")
 
+class MRWordFreqCount(MRJob):
 
-class MRMostUsedWord(MRJob):
+    def mapper(self, _, line):
+    #Split each line of the file, count each word as 1 and return the entire List
+        return [ (word, 1) for word in WORD_RE.findall(line) ]
 
-    def steps(self):
-        return [
-            MRStep(mapper=self.mapper_get_words,
-                   combiner=self.combiner_count_words,
-                   reducer=self.reducer_count_words),
-            MRStep(reducer=self.reducer_find_max_word)
-        ]
-
-    def mapper_get_words(self, _, line):
-        # yield each word in the line
-        for word in WORD_RE.findall(line):
-            yield (word.lower(), 1)
-
-    def combiner_count_words(self, word, counts):
-        # optimization: sum the words we've seen so far
-        yield (word, sum(counts))
-
-    def reducer_count_words(self, word, counts):
-        # send all (num_occurrences, word) pairs to the same reducer.
-        # num_occurrences is so we can easily use Python's max() function.
+    def combiner(self, word, counts):
+    #Reduce by using the word as the key. Make the (Null, (word, count)) as output
         yield None, (sum(counts), word)
 
-    # discard the key; it is just None
-    def reducer_find_max_word(self, _, word_count_pairs):
-        # each item of word_count_pairs is (count, word),
-        # so yielding one results in key=counts, value=word
-        yield max(word_count_pairs)
+    def reducer(self, _, wordCountPair):
+    #Ignore Null by _ and report the most occured word pair by max(), implicitly the first element(count)
+        yield max(wordCountPair)
 
 
 if __name__ == '__main__':
-    MRMostUsedWord.run()
+     MRWordFreqCount.run()
 
 print("--- %s seconds ---" % (time.time() - start_time))
