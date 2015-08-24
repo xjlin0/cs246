@@ -1,11 +1,13 @@
 from mrjob.job import MRJob
 from mrjob.step import MRStep
-import re
+import itertools
 
-WORD_RE = re.compile(r"[\w']+")
+s        = 100 # set support threshold
+topN     = 15  # set top items to show
+fileName = 'browsing.txt'
+#fileName = 'q2testdata.txt'  #toy input set for test
 
-
-class MRFriendYouMayKnow(MRJob):
+class MRProductRecommendation(MRJob):
 
     def steps(self):
         return [
@@ -15,26 +17,26 @@ class MRFriendYouMayKnow(MRJob):
             MRStep(reducer=self.reducer_find_max_word)
         ]
 
-    def mapper_get_words(self, _, line):
+    def mapper_parse_line(self, _, line):
         # yield each word in the line
-        for word in WORD_RE.findall(line):
-            yield (word.lower(), 1)
+        return [(single, 1) for single in line.split()]
 
-    def combiner_count_words(self, word, counts):
+
+    def combiner_count_singles(self, word, counts):
         # optimization: sum the words we've seen so far
-        yield (word, sum(counts))
+        yield word, sum(counts)
 
     def reducer_count_words(self, word, counts):
         # send all (num_occurrences, word) pairs to the same reducer.
         # num_occurrences is so we can easily use Python's max() function.
-        yield None, (sum(counts), word)
+
 
     # discard the key; it is just None
     def reducer_find_max_word(self, _, word_count_pairs):
         # each item of word_count_pairs is (count, word),
         # so yielding one results in key=counts, value=word
-        yield max(word_count_pairs)
+
 
 
 if __name__ == '__main__':
-    MRFriendYouMayKnow.run()
+    MRProductRecommendation.run()
