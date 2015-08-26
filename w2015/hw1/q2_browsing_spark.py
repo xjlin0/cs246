@@ -3,7 +3,7 @@
 import itertools
 
 def parseSingle(line):
-
+    return [ (single, 1) for single in line.split() ]
 
 def parseSet(line, itemSetSize=2):
     return [((itemSet[0], itemSet), 1) for itemSet in list(itertools.permutations(line.split(), itemSetSize))]
