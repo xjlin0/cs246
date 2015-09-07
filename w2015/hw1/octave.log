@@ -1,0 +1,55 @@
+
+$ lsh:> brew tap homebrew/science
+$ lsh:> brew update && brew upgrade
+$ lsh:> brew install octave
+# make sure installed XQuartz http://xquartz.macosforge.org
+$ lsh:> brew uninstall gnuplot
+$ lsh:> brew install gnuplot --with-x11
+$ lsh:> octave
+octave:1> setenv GNUTERM x11
+octave:2> load patches;
+octave:3> T1=lsh('lsh',20,24,size(patches,1),patches,'range',255);
+.......
+#Table 20 adding 15484 buckets (now 15484)
+#Table 20: 59500 elements
+octave:4> lshstats(T1);
+#complain error: 'B' undefined near line 50 column 29, (lshstats.m)
+octave:5> lshstats(T1,100);
+# of comparisons: mean 3178.21, max 11968, failures: 2
+octave:6> lshstats(T1,'test',patches,patches(:,1:1000),2);
+# of comparisons: mean 2863.16, max 11039, failures: 3
+octave:7> lshstats(T1(1:5),'test',patches,patches(:,1:1000),2);
+# of comparisons: mean 1473.46, max 6915, failures: 46
+octave:8> lshstats(T1(1:10),'test',patches,patches(:,1:1000),2);
+# of comparisons: mean 2115.78, max 9546, failures: 19
+octave:9> T2=lsh('lsh',20,50,size(patches,1),patches,'range',255);
+.........
+#Table 20 adding 33519 buckets (now 33519)
+#Table 20: 59500 elements
+octave:10> lshstats(T2,'test',patches,patches(:,1:1000),2);
+# of comparisons: mean 649.44, max 5336, failures: 387
+octave:11> T2(21:40) = lsh('lsh',20,50,size(patches,1),patches,'range',255);
+....
+#Table 20 adding 33933 buckets (now 33933)
+#Table 20: 59500 elements
+octave:12> lshstats(T2,'test',patches,patches(:,1:1000),2);
+# of comparisons: mean 825.43, max 5892, failures: 318
+octave:13> figure(1);imagesc(reshape(patches(:,50),20,20));colormap gray;axis image
+octave:14> tic; [nnlsh,numcand]=lshlookup(patches(:,50),patches,T2,'k',11,'distfun','lpnorm','distargs',{1});toc
+
+octave:18> figure(2);clf;
+octave:19> for k=1:10, subplot(2,5,k);imagesc(reshape(patches(:,nnlsh(k+1)),20,20)); colormap gray;axis image; end
+
+octave:20> tic;d=sum(abs(bsxfun(@minus,patches(:,50),patches)));
+octave:21> [ignore,ind]=sort(d);toc;
+octave:22> figure(3);clf;
+octave:23> for k=1:10, subplot(2,5,k);imagesc(reshape(patches(:,ind(k+1)),20,20));colormap gray;axis image; end
+
+octave:24> Te=lsh('e2lsh',50,30,size(patches,1),patches,'range',255,'w',-4);
+....
+#Table 50 adding 19093 buckets (now 19093)
+#Table 50: 59500 elements
+octave:25> lshstats(Te,'test',patches,patches(:,1:1000),2);
+ # of comparisons: mean 2140.80, max 13955, failures: 16
+octave:26> tic; [nnlsh,numcand]=lshlookup(patches(:,50),patches,Te,'k',11,'distfun','lpnorm','distargs',{2});toc
+octave:27> tic;d=sqrt(sum(bsxfun(@minus,patches(:,50),patches).^2)); [ignore,ind]=sort(d);toc;
