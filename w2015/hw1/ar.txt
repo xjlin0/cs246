@@ -1,0 +1,71 @@
+How to calculate associative rule?
+
+Previously I used "stripes" approach: first iterate once to get single item count, then iterate again to get associate rules by calculating frequency of the pair in carts. In this way I assuem single item count fit in the memory.
+
+Here is the "order of inversion" design pattern: for a single cart, emit both single and pair item tuples, so that just ONE iteration required. This way I don't need to worry if single item count fit in memory and no need to iterate the same file twice in MRJob.
+
+
+[Given Carts]
+a, b
+a, c
+
+(a -> b) = #(a, b) / total occurance of a = 1 / 2 = 0.5
+##################
+
+# Apache Spark's ReduceByKey approach
+# first emit both tuples for single and pair tuples
+a, b => (('a', 'Total'), 1), (('b', 'Total'), 1), (('a', 'b'), 1), (('b', 'a'), 1))
+a, c => (('a', 'Total'), 1), (('c', 'Total'), 1), (('a', 'c'), 1), (('c', 'a'), 1))
+
+# reduceByKey         then      map
+(('a', 'Total'), 2)       =>  ('a', ('Total', 2))
+(('b', 'Total'), 1)       =>  ('b', ('Total', 1))
+(('c', 'Total'), 1)       =>  ('c', ('Total', 1))
+(('a','b'), 1)         =>  ('a', ('b', 1))
+(('b','a'), 1)         =>  ('b', ('a', 1))
+(('a','c'), 1)         =>  ('a', ('c', 1))
+(('c','a'), 1)         =>  ('c', ('a', 1))
+# groupByKey
+('a', [('Total', 2), ('b', 1), ('c', 1)])
+.....
+
+#Calculate associate rule by mapping:
+(('a', 'b'), 0.5) = b's value / 'Total''s value
+
+>>> s = [('Total', 2), ('b', 1), ('c', 1)]
+>>> def findTotal(arr):
+...     for k, v in arr:
+...             if k == 'Total':
+...                     return v
+...
+>>> print find'Total'(s)
+2
+## If using comprehension to return single v:
+>>> def ttt(arr):
+...     return [v for k, v in arr if k is None]
+     # This is slower because it has to iterate the entire array!!!
+>>> ttt(s)
+[2]
+
+# Python's collections:counter approach
+
+a, b =>  ('a', ('a', 'Total')), ('b', ('b', 'Total')), ('a', ('a', 'b')), ('b', ('b', 'a'))
+a, c =>  ('a', ('a', 'Total')), ('c', ('c', 'Total')), ('a', ('a', 'c')), ('c', ('c', 'a'))
+
+#GroupByKey
+('a',[('a', 'Total'), ('a', 'b'), ('a', 'Total'), ('a', 'c')])
+('b',[('b', 'Total'), ('b', 'a')])
+('c',[('c', 'Total'), ('c', 'a')])
+
+#Customized Reduce, maybe by "from collections import Counter"
+('a', {('a', 'Total'): 2, ('a', 'b'): 1, ('a', 'c'): 1})
+('b', {('b', 'Total'): 1, ('b', 'a'): 1})
+('c', {('c', 'Total'): 1, ('c', 'a'): 1})
+# Use Counter(mapping).most_common(n) to get top associate items and save memory
+
+#Calculate associate rule:
+('a', 'b') => (#('a', 'b')/#('a', 'Total')) = 1/2 = 0.5
+# total = dictionary.pop(('a', 'Total'))
+
+
+Reference: http://stackoverflow.com/a/15606827/4257237
