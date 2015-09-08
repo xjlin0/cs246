@@ -1,64 +1,50 @@
-# http://stackoverflow.com/questions/26082234
+# Specifically determine input http://stackoverflow.com/questions/26082234
 from mrjob.job import MRJob
 from mrjob.step import MRStep
+from collections import Counter
 import itertools
-
+#from heapq import nlargest  #http://stackoverflow.com/a/2243562/4257237  or http://sochor.co/Map-Reduce-Miniproject.html
 s        = 100 # set support threshold
 topN     = 15  # set top items to show
 #fileName = 'browsing.txt'
 fileName = 'q2testdata.txt'  #toy input set for test
-singleCount = None
 
 class MRProductRecommendation(MRJob):
 
-    def steps(self):
-        return [
-            MRStep(mapper_init=self.init_get_single_count,
-                   mapper=self.mapper_parse_line,
-                   combiner=self.combiner_count_singles,
-                   reducer=self.reducer_count_singles,
-                   reducer_final=self.final_store_single_count),
-            MRStep(mapper=self.mapper_itemSet_count,
-                   combiner=self.combiner_count_itemSet,
-                   reducer=self.reducer_count_itemSet),
-            MRStep(mapper=self.mapper_calcualte_score)
-        ]
+  def mapper_parse_line(self, _, line):
+    self.maxN = {}
+    items  = line.split()
+    single = [ ( item, [ ( item, 'Total') ] )  for item in items  ]
+    pairs  = [ ( pair[0], [ pair ] ) for pair in itertools.permutations(items, 2)]
+    return single + pairs
 
-   ############ Get single item count #####
+  def reducer_groupByKey(self, key, values):
+    yield key, reduce(lambda a, b: a + b, values)  #groupByKey() or yield (key, list(itertools.chain(*values)))
 
-    def init_get_single_count(self):
-        self.single_count = {}
+  def combiner_aggregate_tops(self, key, values):
+    topNarray = Counter(values).most_common( topN + 1 )
+    if topNarray[0][1] > s
+      yield key, topNarray
+#What if 100% rate? (('a', 'c'), 45), (('a', 'Total'), 45)
+  def mapper_calcSC(self, k1, topNarray):
+    total = float( topNarray.pop(0)[1] ) #pop(0) would be (('a', 'Total'), 45)
+    yield [ ((k1, k2), count/total) for k2, count in topNarray ]
 
-    def mapper_parse_line(self, _, line):
-        for single in line.split():
-            yield single, 1
+  def reducer_find_maxN(self, pair, score):
+    self.maxN(pair) = score  #add a pair score to the final answer
+    self.maxN = Counter( dict( self.maxN.most_common(topN) ) )
 
-    def combiner_count_singles(self, single, counts):
-        yield single, sum(counts)
+  def reducer_final_print_maxN(self):
+    print self.maxN
 
-    def reducer_count_singles(self, single, counts):
-        yield single, sum(counts)
-
-    def final_store_single_count(self, single, counts):
-        if counts > s:
-            self.single_count[single]=counts
-
-  #############  Get item pair count ###########
-  # Do I need to put ARGV[0] as input?
-    def mapper_itemSet_count(self):
-        for itemSet in list(itertools.permutations(line.split(),2)):
-            yield itemSet, 1
-
-    def combiner_count_itemSet(self, itemSet, setCounts):
-        yield itemSet, sum(setCounts)
-
-    def reducer_count_itemSet(self, itemSet, setCounts):
-        yield itemSet, sum(setCounts)
-
-########### calcualte confident score   ###########
-
-    def mapper_calcualte_score(self, itemSet, setCounts):
-        yield itemSet, float(setCounts)/self.single_count[itemSet[0]]
+  def steps(self):
+    return [
+        MRStep(mapper=self.mapper_parse_line,
+               reducer=self.reducer_groupByKey,
+               combiner=self.combiner_aggregate_tops ),
+        MRStep(mapper=self.mapper_calcSC,
+               reducer=self.reducer_find_maxN,
+               reducer_final=self.final_print_maxN ) ]
 
 if __name__ == '__main__':
     MRProductRecommendation.run()
