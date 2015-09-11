@@ -28,6 +28,8 @@ a, c => (('a', 'Total'), 1), (('c', 'Total'), 1), (('a', 'c'), 1), (('c', 'a'), 
 # groupByKey
 ('a', [('Total', 2), ('b', 1), ('c', 1)])
 .....
+#beware of groupByKey() needs to be evaluated.
+#.groupByKey().mapValues(list)
 
 #Calculate associate rule by mapping:
 (('a', 'b'), 0.5) = b's value / 'Total''s value
@@ -56,16 +58,21 @@ a, c =>  ('a', ('a', 'Total')), ('c', ('c', 'Total')), ('a', ('a', 'c')), ('c', 
 ('a',[('a', 'Total'), ('a', 'b'), ('a', 'Total'), ('a', 'c')])
 ('b',[('b', 'Total'), ('b', 'a')])
 ('c',[('c', 'Total'), ('c', 'a')])
+than map to
+('a',['Total', 'b', 'Total', 'c'])
+('b',['Total', 'a'])
+('c',['Total', 'a'])
+
 
 #Customized Reduce, maybe by "from collections import Counter"
-('a', {('a', 'Total'): 2, ('a', 'b'): 1, ('a', 'c'): 1})
-('b', {('b', 'Total'): 1, ('b', 'a'): 1})
-('c', {('c', 'Total'): 1, ('c', 'a'): 1})
+('a', {'Total': 2, 'b': 1, 'c': 1})
+('b', {'Total': 1, 'a': 1})
+('c', {'Total': 1, 'a': 1})
+
+# total = dictionary.pop(('a', 'Total'))
 # Use Counter(mapping).most_common(n) to get top associate items and save memory
 
 #Calculate associate rule:
-('a', 'b') => (#('a', 'b')/#('a', 'Total')) = 1/2 = 0.5
-# total = dictionary.pop(('a', 'Total'))
-
+('a', 'b') => (#('b': 1)/#('Total': 2) = 1/2 = 0.5
 
 Reference: http://stackoverflow.com/a/15606827/4257237
