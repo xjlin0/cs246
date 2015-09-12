@@ -22,7 +22,7 @@ class MRProductRecommendation(MRJob):
 
   def mapper_aggregate_tops(self, key, all_values):
     items = [ pair[1] for pair in all_values ]
-    topCounter = Counter(items)
+    topCounter = Counter( items )
     total = topCounter['Total']
     if total > s:
       del( topCounter['Total'] )
@@ -34,10 +34,10 @@ class MRProductRecommendation(MRJob):
     total = float( topNarray.pop(-1)[1] )
     local_counter = Counter()
     for k2, count in topNarray:
-      local_counter[ (k1, k2) ] = count/total
+      local_counter[ (k1, k2) ] = count / total
     yield k1, local_counter.most_common( topN )
 
-  def reducer_maxN(self, _, topNarray):
+  def reducer_maxN(self, _, topNarray): #use both reducer and combiner for #takeOrdered()
     combined = reduce( lambda a, b: a + b, topNarray )
     yield None, Counter( dict((tuple(pair), count) for pair, count in combined) ).most_common( topN )
 
