@@ -1,5 +1,6 @@
 from mrjob.job import MRJob
 from mrjob.step import MRStep
+from collections import Counter
 import itertools
 import time
 
@@ -27,7 +28,8 @@ class MRFriendYouMayKnow(MRJob):
     yield key, list(itertools.chain(*values))  #yield key, reduce(lambda a, b: a + b, values)
 
   def mapper_suggestion(self, user, potentials):
-    yield user, sorted(potentials, reverse=True)
+    N = 10  #only ouput 10 most possible friends
+    yield user, Counter( dict( (friend, count) for count, friend in potentials ) ).most_common( N )
 
   def steps(self):
     return [
