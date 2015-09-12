@@ -12,5 +12,6 @@
 
 - [x] **q2_browsing_mrjob_t1.py**: MRJob/Python to calculate confidence .score of association rules.  Only one iteration ("order of inversion" design pattern).
 - [x] **q2_browsing_spark_t1.py**: PySpark/Python to calculate confidence score of association rules.  Only one iteration ("order of inversion" design pattern).
+- [x] **q2_browsing_spark_t1.rb**: Ruby-Spark to calculate confidence score of association rules.  Only one iteration ("order of inversion" design pattern).
 - [x] **q2_browsing_spark_t2.py**: PySpark/Python to calculate confidence score of association rules.  Iteration twice ("stripes" approach).
 - [x] **q2_browsing_spark_t2.rb**: Ruby-Spark to calculate confidence score of association rules.  Iteration twice ("stripes" approach).

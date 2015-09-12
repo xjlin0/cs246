@@ -1,5 +1,5 @@
-# In ruby-spark shell
-# load('q2_browsing_spark.rb')
+# In jenv exec ruby-spark shell
+# load('q2_browsing_spark_t2.rb')
 
 require 'ruby-spark'
 
@@ -32,6 +32,6 @@ confidence2RDD  = fileRDD
                   .bind(singleCountHash: singleCountHash)# => bind is required for accessing singleCountHash within lambda!!
 
 puts "Top " + topN.to_s
-# Currently there's no RDD.takeOrdered() in Ruby-spark.
-print confidence2RDD.sort_by(lambda{|itemSet, score| -score}).take(topN)
-#print confidence2RDD.reduce( lambda{|memo, item| memo[1] > item[1] ? memo : item } ) # for taking the item pair with the max score
+# Currently there's no RDD.takeOrdered() in Ruby-spark. Consider using #max(topN) or #max_by(topN) instead
+#print confidence2RDD.sort_by(lambda{|itemSet, score| -score}).take(topN)
+print confidence2RDD.reduce( lambda{|memo, item| memo[1] > item[1] ? memo : item } ).to_s # customization from #max for taking the item pair with the max score because Ruby-Spark don't have max_by yet.
