@@ -21,7 +21,7 @@ class MRFriendYouMayKnow(MRJob):
   def mapper_filter_rearrange(self, pair, counts):
     if counts > 0:
       user, friend = pair[0], pair[1]
-      yield user, (counts, friend)
+      yield user, [ (counts, friend) ] #wrap in List so it can be added to each other
 
   def reducer_groupByKey(self, key, values):   #groupByKey()
     yield key, list(itertools.chain(*values))  #yield key, reduce(lambda a, b: a + b, values)
