@@ -4,6 +4,7 @@ from mrjob.step import MRStep
 from collections import Counter
 import itertools
 import time
+
 start_time = time.time()
 
 s        = 100 # set support threshold
@@ -11,24 +12,24 @@ topN     = 15  # set top items to show
 
 class MRProductRecommendation(MRJob):
 
-  def mapper_parse_line(self, _, line):
+  def mapper_single_and_pairs(self, _, line):
     items  = line.split()
-    single = [ ( item, [ ( item, 'Total') ] )  for item in items  ]
+    singles = [ ( item, [ ( item, 'Total') ] )  for item in items  ]
     pairs  = [ ( pair[0], [ pair ] ) for pair in itertools.permutations(items, 2) ]
-    return single + pairs
+    return singles + pairs
 
   def reducer_groupByKey(self, key, values):   #groupByKey()
     yield key, list(itertools.chain(*values))  #yield key, reduce(lambda a, b: a + b, values)
 
-  def mapper_aggregate_tops(self, key, all_values):
-    items = [ pair[1] for pair in all_values ]
-    topCounter = Counter( items )
+  def mapper_sortFilter_byCounter(self, k1, singles_and_pairs):
+    pairs = [ pair for k2, pair in singles_and_pairs ]
+    topCounter = Counter( pairs )
     total = topCounter['Total']
     if total > s:
       del( topCounter['Total'] )
       topNarray = topCounter.most_common( topN )
       topNarray.append( ('Total', total) ) #so the count of single item will be always at the end.
-      yield key, topNarray
+      yield k1, topNarray
 
   def mapper_calcCS_byCounter(self, k1, topNarray):
     total = float( topNarray.pop(-1)[1] )
@@ -40,9 +41,9 @@ class MRProductRecommendation(MRJob):
 
   def steps(self):
     return [
-        MRStep(mapper=self.mapper_parse_line,
+        MRStep(mapper=self.mapper_single_and_pairs,
                reducer=self.reducer_groupByKey),
-        MRStep(mapper=self.mapper_aggregate_tops),
+        MRStep(mapper=self.mapper_sortFilter_byCounter),
         MRStep(mapper=self.mapper_calcCS_byCounter,
                combiner=self.reducer_takeOrdered_byCounter,
                reducer=self.reducer_takeOrdered_byCounter )    ]
