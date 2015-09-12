@@ -30,25 +30,22 @@ class MRProductRecommendation(MRJob):
       topNarray.append( ('Total', total) ) #so the count of single item will be always at the end.
       yield key, topNarray
 
-  def mapper_store_counters(self, k1, topNarray):
+  def mapper_calcCS_byCounter(self, k1, topNarray):
     total = float( topNarray.pop(-1)[1] )
-    local_counter = Counter()
-    for k2, count in topNarray:
-      local_counter[ (k1, k2) ] = count / total
-    yield k1, local_counter.most_common( topN )
+    yield k1, Counter( dict( ((k1, k2), count/total ) for k2, count in topNarray ) ).most_common( topN )
 
-  def reducer_maxN(self, _, topNarray): #use both reducer and combiner for #takeOrdered()
+  def reducer_takeOrdered_byCounter(self, _, topNarray): #require both reducer and combiner
     combined = reduce( lambda a, b: a + b, topNarray )
-    yield None, Counter( dict((tuple(pair), count) for pair, count in combined) ).most_common( topN )
+    yield None, Counter( dict( (tuple(pair), count ) for pair, count in combined ) ).most_common( topN )
 
   def steps(self):
     return [
         MRStep(mapper=self.mapper_parse_line,
                reducer=self.reducer_groupByKey),
         MRStep(mapper=self.mapper_aggregate_tops),
-        MRStep(mapper=self.mapper_store_counters,
-               combiner=self.reducer_maxN,
-               reducer=self.reducer_maxN )    ]
+        MRStep(mapper=self.mapper_calcCS_byCounter,
+               combiner=self.reducer_takeOrdered_byCounter,
+               reducer=self.reducer_takeOrdered_byCounter )    ]
 
 if __name__ == '__main__':
     MRProductRecommendation.run()
