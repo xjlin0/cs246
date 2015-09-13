@@ -7,10 +7,11 @@
 # conf.setAppName("Friends you may know")
 # conf.set("spark.executor.memory", "16g")
 #sc = SparkContext(conf=conf)
-
+from collections import Counter
 import itertools
 
 fileName = 'soc-LiveJournal1Adj.txt'
+N = 10  #only ouput 10 most possible friends
 
 def connecteds_and_commons(line):
   minimum = -9999999999
@@ -27,7 +28,7 @@ friendsListRDD = (sc
                   .filter(lambda (pair, counts): counts > 0)
                   .map(lambda ((user, friend), counts): (user, (counts, friend)))
                   .groupByKey()
-                  .map(lambda (user, suggestions):(user, sorted(list(suggestions), reverse=True)))
+                  .map(lambda (user, suggestions):(user, Counter( dict( (friend, count) for count, friend in suggestions ) ).most_common( N ) ) )
                   #.cache()
                    )
 
