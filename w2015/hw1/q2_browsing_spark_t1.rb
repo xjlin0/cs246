@@ -18,7 +18,7 @@ singles_and_pairs = lambda do |line|
   items  = line.split
   singles= items.map{ |item| [[item, 'Total'], 1] }
   pairs  = items.permutation(2).map{ |pair| [pair, 1] }
-  singles + pairs
+  singles.concat( pairs )
 end
 
 calcCS = lambda do |pair|  #need filter out nil beforehand
