@@ -7,6 +7,8 @@
 # conf.setAppName("Association Rules")
 # conf.set("spark.executor.memory", "16g")
 #sc = SparkContext(conf=conf)
+from scipy.spatial.distance import pdist
+from scipy.spatial.distance import squareform
 from collections import Counter
 import numpy as np
 
@@ -20,14 +22,14 @@ def pearson_nonzero(list1, list2):
 def pearson_nonzero_indexes(indexes):
 	return np.corrcoef(center_vector(data(indexes[0])), center_vector(data(indexes[1])))[0, 1]
 
->>> for pair in itertools.combinations(range(len(data)), 2):
-...     nn[pair]=pearson_nonzero_indexes(pair)
-...
-Traceback (most recent call last):
-  File "<stdin>", line 2, in <module>
-  File "<stdin>", line 2, in pearson_nonzero_indexes
-TypeError: 'numpy.ndarray' object is not callable
->>>
+# >>> for pair in itertools.combinations(range(len(data)), 2):
+# ...     nn[pair]=pearson_nonzero_indexes(pair)
+# ...
+# Traceback (most recent call last):
+#   File "<stdin>", line 2, in <module>
+#   File "<stdin>", line 2, in pearson_nonzero_indexes
+# TypeError: 'numpy.ndarray' object is not callable
+# >>>
 
 #[(pair, pearson_nonzero(pair)) for pair in itertools.combinations(data, 2)]
 
@@ -38,7 +40,31 @@ fileName = '07-recsys1.txt'
 #fileName = 'q1-dataset/q1-dataset/user-shows.txt'
 topN = 2
 
-data = np.loadtxt(fileName, delimiter=" ")#.tolist()
+data = np.loadtxt(fileName, delimiter=" ").T#.tolist()
+
+>>> data
+array([[ 1.,  0.,  3.,  0.,  0.,  5.,  0.,  0.,  5.,  0.,  4.,  0.],
+       [ 0.,  0.,  5.,  4.,  0.,  0.,  4.,  0.,  0.,  2.,  1.,  3.],
+       [ 2.,  4.,  0.,  1.,  2.,  0.,  3.,  0.,  4.,  3.,  5.,  0.],
+       [ 0.,  2.,  4.,  0.,  5.,  0.,  0.,  4.,  0.,  0.,  2.,  0.],
+       [ 0.,  0.,  4.,  3.,  4.,  2.,  0.,  0.,  0.,  0.,  2.,  5.],
+       [ 1.,  0.,  3.,  0.,  3.,  0.,  0.,  2.,  0.,  0.,  4.,  0.]])
+
+centered = np.array()
+
+ans = 1 - pdist([center_vector(row) for row in data], 'cosine')
+
+[-0.17854212  0.41403934 -0.10245014 -0.30895719  0.58703951 -0.52623481
+  0.46800784  0.39891072 -0.30643976 -0.62398065 -0.28426762  0.50636968
+  0.4587349  -0.23533936 -0.21591676]
+
+squareform(ans)
+array([[ 0.        , -0.17854212,  0.41403934, -0.10245014, -0.30895719,  0.58703951],
+       [-0.17854212,  0.        , -0.52623481,  0.46800784,  0.39891072, -0.30643976],
+       [ 0.41403934, -0.52623481,  0.        , -0.62398065, -0.28426762,  0.50636968],
+       [-0.10245014,  0.46800784, -0.62398065,  0.        ,  0.4587349 , -0.23533936],
+       [-0.30895719,  0.39891072, -0.28426762,  0.4587349 ,  0.        , -0.21591676],
+       [ 0.58703951, -0.30643976,  0.50636968, -0.23533936, -0.21591676, 0.        ]])
 
 #list(itertools.combinations(range(len(data)), 2)) #all indexes in pair to avoid unhashable list problems
 
