@@ -1,14 +1,14 @@
 # Under the PySpark shell, type:
-# execfile('q1_recommendation_system_spark_t2.py')
+# execfile('q1_recommendation_system_spark_t1.py')
 
 #from pyspark import SparkContext, SparkConf
 # conf = SparkConf()
 # conf.setMaster("local")
-# conf.setAppName("Association Rules")
+# conf.setAppName("Recommendation System")
 # conf.set("spark.executor.memory", "16g")
 #sc = SparkContext(conf=conf)
 # from scipy.spatial import distance
-from scipy.spatial import distance as dt
+#from scipy.spatial import distance as dt
 from collections import Counter
 import numpy as np
 
@@ -19,8 +19,8 @@ def center_vector(vector): #[7, 6, 0, 2] => [2, 1, 0, -3] (center only on nonzer
 def pearson_nonzero(list1, list2):
   return np.corrcoef(center_vector(list1), center_vector(list2))[0, 1]
 
-def pearson_nonzero_indexes(indexes):
-	return np.corrcoef(center_vector(data(indexes[0])), center_vector(data(indexes[1])))[0, 1]
+# def pearson_nonzero_indexes(indexes):
+# 	return np.corrcoef(center_vector(data(indexes[0])), center_vector(data(indexes[1])))[0, 1]
 
 def map_tops(row, topN=2):
   #input: [0.41403934 , -0.17854212,  -2, -0.10245014, -0.30895719,  0.58703951] #output:[user_id,[(top_associtated_user_id, top_similarity),...] ]
@@ -33,7 +33,26 @@ def parse_line(line):
 
 #fileName = 'q1-dataset/q1-dataset/user-shows.txt'
 fileName = '07-recsys1.txt'
-data = np.loadtxt(fileName, delimiter=" ").T#.tolist()
+topN     = 2
+dataRDD = (sc.textFile(fileName, 12 ) #partition goes here
+             .map( parse_line )
+             .zipWithIndex() #([data, data, data], line#)
+          )
+
+suggestRDD = (dataRDD
+              .cartesian( dataRDD ) #get all possible permutations
+              .filter(lambda (object1, object2): object1[1] != object2[1]) #remove self-self combination
+              .map(lambda (object1, object2): (object1[1], ( (object1[1], object2[1]),  pearson_nonzero(object1[0], object2[0]) ) ) )  #(0, ((0, 1), 0.57735026918962584))
+              .groupByKey()
+              .mapValues(lambda similarities: Counter(dict(similarities)).most_common( topN ) )
+              # forgot to include original data in the map after filter!!
+              )
+
+# Counter( dict( key, count/total ) for k2, count in topNarray ) ).most_common( topN )
+
+#print dataRDD
+print suggestRDD.take(2)
+#print suggestRDD.count()
 
 # >>> data
 # array([[ 1.,  0.,  3.,  0.,  0.,  5.,  0.,  0.,  5.,  0.,  4.,  0.],
@@ -43,8 +62,8 @@ data = np.loadtxt(fileName, delimiter=" ").T#.tolist()
 #        [ 0.,  0.,  4.,  3.,  4.,  2.,  0.,  0.,  0.,  0.,  2.,  5.],
 #        [ 1.,  0.,  3.,  0.,  3.,  0.,  0.,  2.,  0.,  0.,  4.,  0.]])
 
-similarities = dt.squareform( 1 - dt.pdist([center_vector(row) for row in data], 'cosine') )
-similarities -= np.eye(len(similarities))*2  #use -2 as the label of user_id since other data type is not allowed in the array
+# similarities = dt.squareform( 1 - dt.pdist([center_vector(row) for row in data], 'cosine') )
+# similarities -= np.eye(len(similarities))*2  #use -2 as the label of user_id since other data type is not allowed in the array
 
 # array([[-2         , -0.17854212,  0.41403934, -0.10245014, -0.30895719,  0.58703951],
 #        [-0.17854212, -2         , -0.52623481,  0.46800784,  0.39891072, -0.30643976],
@@ -53,26 +72,26 @@ similarities -= np.eye(len(similarities))*2  #use -2 as the label of user_id sin
 #        [-0.30895719,  0.39891072, -0.28426762,  0.4587349 , -2         , -0.21591676],
 #        [ 0.58703951, -0.30643976,  0.50636968, -0.23533936, -0.21591676, -2        ]])
 
-associate_users = [ map_tops(row) for row in similarities ]
-# [(0, [(5, 0.58703950856427412), (2, 0.41403933560541262)]), 
-#  (1, [(3, 0.46800784077976632), (4, 0.39891071573694159)]), 
-#  (2, [(5, 0.50636968354183332), (0, 0.41403933560541262)]), 
-#  (3, [(1, 0.46800784077976632), (4, 0.45873490213598345)]), 
-#  (4, [(3, 0.45873490213598345), (1, 0.39891071573694159)]), 
+# associate_users = [ map_tops(row) for row in similarities ]
+# [(0, [(5, 0.58703950856427412), (2, 0.41403933560541262)]),
+#  (1, [(3, 0.46800784077976632), (4, 0.39891071573694159)]),
+#  (2, [(5, 0.50636968354183332), (0, 0.41403933560541262)]),
+#  (3, [(1, 0.46800784077976632), (4, 0.45873490213598345)]),
+#  (4, [(3, 0.45873490213598345), (1, 0.39891071573694159)]),
 #  (5, [(0, 0.58703950856427412), (2, 0.50636968354183332)])]
 
 #zip(associate_users, data)
-# [((0, [(5, 0.58703950856427412), (2, 0.41403933560541262)]), 
-# 	array([ 1.,  0.,  3.,  0.,  0.,  5.,  0.,  0.,  5.,  0.,  4.,  0.])), 
-# ((1, [(3, 0.46800784077976632), (4, 0.39891071573694159)]), 
-# 	array([ 0.,  0.,  5.,  4.,  0.,  0.,  4.,  0.,  0.,  2.,  1.,  3.])), 
-# ((2, [(5, 0.50636968354183332), (0, 0.41403933560541262)]), 
-# 	array([ 2.,  4.,  0.,  1.,  2.,  0.,  3.,  0.,  4.,  3.,  5.,  0.])), 
-# ((3, [(1, 0.46800784077976632), (4, 0.45873490213598345)]), 
-# 	array([ 0.,  2.,  4.,  0.,  5.,  0.,  0.,  4.,  0.,  0.,  2.,  0.])), 
-# ((4, [(3, 0.45873490213598345), (1, 0.39891071573694159)]), 
-# 	array([ 0.,  0.,  4.,  3.,  4.,  2.,  0.,  0.,  0.,  0.,  2.,  5.])), 
-# ((5, [(0, 0.58703950856427412), (2, 0.50636968354183332)]), 
+# [((0, [(5, 0.58703950856427412), (2, 0.41403933560541262)]),
+# 	array([ 1.,  0.,  3.,  0.,  0.,  5.,  0.,  0.,  5.,  0.,  4.,  0.])),
+# ((1, [(3, 0.46800784077976632), (4, 0.39891071573694159)]),
+# 	array([ 0.,  0.,  5.,  4.,  0.,  0.,  4.,  0.,  0.,  2.,  1.,  3.])),
+# ((2, [(5, 0.50636968354183332), (0, 0.41403933560541262)]),
+# 	array([ 2.,  4.,  0.,  1.,  2.,  0.,  3.,  0.,  4.,  3.,  5.,  0.])),
+# ((3, [(1, 0.46800784077976632), (4, 0.45873490213598345)]),
+# 	array([ 0.,  2.,  4.,  0.,  5.,  0.,  0.,  4.,  0.,  0.,  2.,  0.])),
+# ((4, [(3, 0.45873490213598345), (1, 0.39891071573694159)]),
+# 	array([ 0.,  0.,  4.,  3.,  4.,  2.,  0.,  0.,  0.,  0.,  2.,  5.])),
+# ((5, [(0, 0.58703950856427412), (2, 0.50636968354183332)]),
 # 	array([ 1.,  0.,  3.,  0.,  3.,  0.,  0.,  2.,  0.,  0.,  4.,  0.]))]
 
 

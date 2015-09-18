@@ -1,12 +1,6 @@
-# Under the PySpark shell, type:
-# execfile('q1_recommendation_system_spark_t2.py')
+# Under the unix shell, type:
+# python q1_recommendation_system_numpy_scipy.py
 
-#from pyspark import SparkContext, SparkConf
-# conf = SparkConf()
-# conf.setMaster("local")
-# conf.setAppName("Association Rules")
-# conf.set("spark.executor.memory", "16g")
-#sc = SparkContext(conf=conf)
 # from scipy.spatial import distance
 from scipy.spatial import distance as dt
 from collections import Counter
