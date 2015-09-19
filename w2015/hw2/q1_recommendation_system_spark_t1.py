@@ -11,6 +11,9 @@
 #from scipy.spatial import distance as dt
 from collections import Counter
 import numpy as np
+import time
+
+start_time = time.time()
 
 def center_vector(vector): #[7, 6, 0, 2] => [2, 1, 0, -3] (center only on nonzeros)
   mean = float( sum(vector) ) / np.nonzero(vector)[0].size
@@ -24,16 +27,26 @@ def parse_line(line):
 
 def map_tops(row, topN=2):
   self_data, counter = [], Counter()
-  for original_data_pair, (id_pair, similarity) in row: #([5, 0, 4, 0, 0, 0], [0, 0, 2, 5, 4, 3]) (8, 4) 0.4743
-    print "\nline 31: ", original_data_pair, id_pair, similarity
+  for original_data_pair, (id_pair, similarity) in row: #(data1, data2), (id1, id2), similarity
+    # print "\nline 31: ", original_data_pair, id_pair, similarity
     self_data = original_data_pair[0]
     counter[ id_pair[1] ] = similarity, original_data_pair[1]
-  return self_data, dict(counter.most_common( topN ))
+  return self_data, counter.most_common( topN )
 
-#fileName = 'q1-dataset/q1-dataset/user-shows.txt'
-fileName = '07-recsys1.txt'
+def recommendation((id, (self_data, topN_list))): #topN_list=(other_id, (similarity, other_data))
+  filled = []
+  for index, value in enumerate(self_data):
+    if value == 0:
+      recommendations = [ similarity*other_data[index] for other_id, (similarity, other_data) in topN_list ]
+      filled += [ reduce(lambda a, b: a+b, recommendations[1:], recommendations[0]) ]
+    else:
+      filled += [ value ]
+  return id, filled    
+
+fileName = 'q1-dataset/q1-dataset/user-shows.txt'
+#fileName = '07-recsys1.txt'
 topN     = 2
-dataRDD  = (sc.textFile(fileName) #partition goes here
+dataRDD  = (sc.textFile(fileName, 8) #partition goes here
              .map( parse_line )
              .zipWithIndex()   #([count, count,...], line#) just like (data, id)
            )
@@ -41,14 +54,14 @@ dataRDD  = (sc.textFile(fileName) #partition goes here
 suggestRDD = (dataRDD
               .cartesian( dataRDD ) #get all possible permutations
               .filter(lambda ((data1, id1), (data2, id2)): id1 != id2 ) #remove self-self combination
-              .map(lambda ((data1, id1), (data2, id2)): (id1, ((data1, data2), ( (id1, id2), pearson_nonzero(data1, data2) ) )  ) )  
+              .map(lambda ((data1, id1), (data2, id2)): (id1, ((data1, data2), ( (id1, id2), pearson_nonzero(data1, data2) ) ) ) )  
               .groupByKey()
               .mapValues( map_tops )
-              # # 
+              .map( recommendation )
               )
 
 
 #print dataRDD
-print suggestRDD.take(2)
-#print suggestRDD.count()
-
+print suggestRDD.take(3)
+#print suggestRDD.lookup(499)
+print("--- %s seconds ---" % (time.time() - start_time))
