@@ -41,7 +41,7 @@ def recommendation((id, (self_data, topN_list))): #topN_list=(other_id, (similar
       filled += [ reduce(lambda a, b: a+b, recommendations[1:], recommendations[0]) ]
     else:
       filled += [ value ]
-  return id, filled    
+  return id, filled
 
 fileName = 'q1-dataset/q1-dataset/user-shows.txt'
 #fileName = '07-recsys1.txt'
@@ -54,8 +54,8 @@ dataRDD  = (sc.textFile(fileName, 8) #partition goes here
 suggestRDD = (dataRDD
               .cartesian( dataRDD ) #get all possible permutations
               .filter(lambda ((data1, id1), (data2, id2)): id1 != id2 ) #remove self-self combination
-              .map(lambda ((data1, id1), (data2, id2)): (id1, ((data1, data2), ( (id1, id2), pearson_nonzero(data1, data2) ) ) ) )  
-              .groupByKey()
+              .map(lambda ((data1, id1), (data2, id2)): (id1, ((data1, data2), ( (id1, id2), pearson_nonzero(data1, data2) ) ) ) )
+              .groupByKey() #need to use reduceByKey(func) to replace it!!
               .mapValues( map_tops )
               .map( recommendation )
               )
