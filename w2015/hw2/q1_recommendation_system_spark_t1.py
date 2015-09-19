@@ -7,8 +7,7 @@
 # conf.setAppName("Recommendation System")
 # conf.set("spark.executor.memory", "16g")
 #sc = SparkContext(conf=conf)
-# from scipy.spatial import distance
-#from scipy.spatial import distance as dt
+
 from collections import Counter
 import numpy as np
 import time
@@ -43,10 +42,13 @@ def recommendation((id, (self_data, topN_list))): #topN_list=(other_id, (similar
       filled += [ value ]
   return id, filled
 
+def combine_tops((dataA, listA), (dataB, listB)):
+  return dataA, Counter( dict(listA+listB) ).most_common(topN)
+
 fileName = 'q1-dataset/q1-dataset/user-shows.txt'
 #fileName = '07-recsys1.txt'
 topN     = 2
-dataRDD  = (sc.textFile(fileName, 8) #partition goes here
+dataRDD  = (sc.textFile( fileName, 12) #partition goes here
              .map( parse_line )
              .zipWithIndex()   #([count, count,...], line#) just like (data, id)
            )
@@ -54,14 +56,12 @@ dataRDD  = (sc.textFile(fileName, 8) #partition goes here
 suggestRDD = (dataRDD
               .cartesian( dataRDD ) #get all possible permutations
               .filter(lambda ((data1, id1), (data2, id2)): id1 != id2 ) #remove self-self combination
-              .map(lambda ((data1, id1), (data2, id2)): (id1, ((data1, data2), ( (id1, id2), pearson_nonzero(data1, data2) ) ) ) )
-              .groupByKey() #need to use reduceByKey(func) to replace it!!
-              .mapValues( map_tops )
+              .map(lambda ((data1, id1), (data2, id2)): (id1, (data1, [(  id2, ( pearson_nonzero(data1, data2), data2 ) )] ) ) ) #use [] for later add two lists together in the reduceByKey()
+              .reduceByKey( lambda a, b: combine_tops(a, b) )
               .map( recommendation )
               )
 
-
 #print dataRDD
-print suggestRDD.take(3)
+print suggestRDD.take(1)
 #print suggestRDD.lookup(499)
 print("--- %s seconds ---" % (time.time() - start_time))
