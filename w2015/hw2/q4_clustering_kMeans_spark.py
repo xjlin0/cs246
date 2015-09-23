@@ -28,6 +28,9 @@ c1_clusters = KMeans.train(parsedData, 10, maxIterations=20, runs=1, initializat
 
 c2_clusters = KMeans.train(parsedData, 10, maxIterations=20, runs=1, initializationMode='k-means||')
 
+#c1_initials=sc.textFile('c1.txt').map(lambda line: array([float(x) for x in line.split(' ')]))
+#c1_preset_clusters = KMeans.train(parsedData, 10, maxIterations=20, initialModel=c1_initials) #new parameters in Spark v1.5.0
+
 # Evaluate clustering by computing Within Set Sum of Squared Errors
 def error(point, model):
     center = model.centers[model.predict(point)]
@@ -39,8 +42,9 @@ def wssse(dataRDD, model):
 c1_WSSSE = wssse(parsedData, c1_clusters)
 c2_WSSSE = wssse(parsedData, c2_clusters)
 
-print("\n(c1 random) Within Set Sum of Squared Error = " + str(c1_WSSSE))
+#c1_cost = c1_clusters.computeCost(parsedData) # Evaluating costs by KMeans.computeCost(RDD) in Spark v1.5.0
 
+print("\n(c1 random) Within Set Sum of Squared Error = " + str(c1_WSSSE))
 
 ## No control of specific seeder or iterations whatsoever.....
 
